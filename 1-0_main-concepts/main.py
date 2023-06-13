@@ -33,10 +33,10 @@ fun_list = [ Tanh for i in range(len(network[0])) ]
 dfun_list = [ d_Tanh for i in range(len(network[0])) ]
 
 examples = [
-	[ [ 0, 0 ], [1] ],
-	[ [ 0, 1 ], [0] ],
-	[ [ 1, 0 ], [0] ],
-	[ [ 1, 1 ], [1] ]
+	[ [ 0, 0 ], [0] ],
+	[ [ 0, 1 ], [1] ],
+	[ [ 1, 0 ], [1] ],
+	[ [ 1, 1 ], [0] ]
 ]
 
 epochs = 10000
