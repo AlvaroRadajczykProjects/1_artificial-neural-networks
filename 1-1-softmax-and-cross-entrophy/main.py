@@ -27,16 +27,16 @@ def MSE(y_pred, y_exp):
 def d_MSE(y_pred, y_exp):
 	return 2*(y_pred - y_exp)
 
-network = implementation.network_builder( 2, [2], 1 )
+network = implementation.network_builder( 2, [3, 4], 4 )
 
 fun_list = [ Tanh for i in range(len(network[0])) ]
 dfun_list = [ d_Tanh for i in range(len(network[0])) ]
 
 examples = [
-	[ [ 0, 0 ], [0] ],
-	[ [ 0, 1 ], [1] ],
-	[ [ 1, 0 ], [1] ],
-	[ [ 1, 1 ], [0] ]
+	[ [ 0, 0 ], [1, 0, 0, 0] ],
+	[ [ 0, 1 ], [0, 0, 1, 0] ],
+	[ [ 1, 0 ], [0, 1, 0, 0] ],
+	[ [ 1, 1 ], [0, 0, 0, 1] ]
 ]
 
 epochs = 10000
@@ -53,13 +53,19 @@ epochs = 10000
 	in addition, Tanh is slower computing, but average results are better than average sigmoid results
 """
 
-#cada 20 ejecuciones, 5 no aprende bien
-
 for i in range(epochs):
-	if i%(1000-1) == 0: implementation.theorical_back_propagation( examples, network, 0.3, fun_list, dfun_list, MSE, d_MSE, True )
-	else: implementation.theorical_back_propagation( examples, network, 0.3, fun_list, dfun_list, MSE, d_MSE, False )
+	if i%(1000-1) == 0: implementation.back_propagation_one_epoch_softmax( examples, network, 0.03, fun_list, dfun_list, True )
+	else: implementation.back_propagation_one_epoch_softmax( examples, network, 0.03, fun_list, dfun_list, False )
 
-print( "prediction for [0, 0] is:", implementation.make_prediction( [0, 0], network, fun_list )[0] > 0.5 )
-print( "prediction for [0, 1] is:", implementation.make_prediction( [0, 1], network, fun_list )[0] > 0.5 )
-print( "prediction for [1, 0] is:", implementation.make_prediction( [1, 0], network, fun_list )[0] > 0.5 )
-print( "prediction for [1, 1] is:", implementation.make_prediction( [1, 1], network, fun_list )[0] > 0.5 )
+def parsePred(pred):
+	ret = []
+	for i in pred:
+		if i >= 0.5: ret.append(1)
+		else: ret.append(0)
+	return ret
+
+print( "prediction for [0, 0] is:", parsePred( implementation.make_prediction( [0, 0], network, fun_list ) ) )
+print( "prediction for [0, 1] is:", parsePred( implementation.make_prediction( [0, 1], network, fun_list ) ) )
+print( "prediction for [1, 0] is:", parsePred( implementation.make_prediction( [1, 0], network, fun_list ) ) )
+print( "prediction for [1, 1] is:", parsePred( implementation.make_prediction( [1, 1], network, fun_list ) ) )
+

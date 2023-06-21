@@ -1,6 +1,7 @@
 from copy import deepcopy
-from numpy import random
-#import random
+#from numpy import random
+import random
+import math
 
 import utils
 
@@ -19,8 +20,8 @@ def network_builder( input_layer, hidden_layers , output_layer ):
 	network = [ [], [] ]
 	for i in range(len(nodes)-1):
 		network[0].append([ 0 for j in range(nodes[i+1]) ])
-		network[1].append(random.normal( loc=0, scale=1, size=( nodes[i], nodes[i+1] ) ).tolist()) #2/nodes[i+1]
-		#network[1].append( utils.random_matrix(nodes[i], nodes[i+1], 3, -3) )
+		#network[1].append(random.normal( loc=0, scale=1, size=( nodes[i], nodes[i+1] ) ).tolist()) #2/nodes[i+1]
+		network[1].append( utils.random_matrix(nodes[i], nodes[i+1], 3, -3) )
 	return network
 
 """
@@ -37,6 +38,37 @@ def gradient_vector_builder( network ):
 		vgrad[0].append([ 0 for j in range(len(network[0][i])) ])
 		vgrad[1].append([ [ 0 for k in range(len(network[1][i][j])) ] for j in range(len(network[1][i])) ])
 	return vgrad
+
+"""
+	Build and empty ADAM vector representation with the same shape of a network as argument (biases errors as network biases, and weights errors as network weights).
+	All element values equal to 0. The difference between gradient_vector_builder is there's a respective momentum and velocity copy for each weight matrix or bias vector
+	instead of one.
+	
+	Momentum = [
+		[] -> Momentum_weights
+		[] -> Momentum_biases	
+	],
+	Velocity = [
+		[] -> Velocity_weights
+		[] -> Velocity_biases	
+	]
+	
+	network -> a network built with network_builder( input_layer, hidden_layers , output_layer ) function
+	
+	return => initialized ADAM vector representation
+"""
+def adam_vector_builder( network ):
+	#Momentum, Velocity -> [[], []]
+	#Inside momentum and velocity, first one stores x_weights (matrices), and second stores x_biases (vectors), where x is Momentum xor Velocity
+	vadam = [ [[], []], [[], []] ]
+	for i in range(len(network[0])):
+		#biases
+		vadam[0][1].append([ 0 for j in range(len(network[0][i])) ])
+		vadam[1][1].append([ 0 for j in range(len(network[0][i])) ])
+		#weights
+		vadam[0][0].append([ [ 0 for k in range(len(network[1][i][j])) ] for j in range(len(network[1][i])) ])
+		vadam[1][0].append([ [ 0 for k in range(len(network[1][i][j])) ] for j in range(len(network[1][i])) ])
+	return vadam
 
 """
 	Returns the results of network forward propagacion
@@ -96,6 +128,54 @@ def calculated_gradient_vector( exp_output_list, al_list, zl_list, network, dfun
 	return ret
 
 """
+
+	Updates the ADAM vector with the current computed gradient vector.
+	
+	vgrad -> gradient vector computed in current epoch
+	vadam -> ADAM vector representation
+
+"""
+def updateAdamVectorValues( vadam, vgrad, b1=0.9, b2=0.99 ):
+	for m in range(len( vgrad[1] )):
+    		for r in range(len( vgrad[1][m] )):
+        		for c in range(len( vgrad[1][m][r] )):
+        			#momentum
+            			vadam[0][0][m][r][c] = b1 * vadam[0][0][m][r][c] + (1 - b1) * vgrad[1][m][r][c]
+            			#velocity
+            			vadam[1][0][m][r][c] = b2 * vadam[1][0][m][r][c] + (1 - b2) * vgrad[1][m][r][c] * vgrad[1][m][r][c]
+	for v in range(len( vgrad[0] )):
+    		for e in range(len( vgrad[0][v] )):
+    			#momentum
+    			vadam[0][1][v][e] = b1 * vadam[0][1][v][e] + (1 - b1) * vgrad[0][v][e]
+    			#velocity
+    			vadam[1][1][v][e] = b2 * vadam[1][1][v][e] + (1 - b2) * vgrad[0][v][e] * vgrad[0][v][e]
+
+"""
+	Adjust ADAM momentum and velocity and return the error value
+	
+	momentum -> momentum value without adjust
+	velocity -> velocity value without adjust
+	
+	return => error value
+"""
+def adjustAdamValue( momentum, velocity, b1=0.9, b2=0.99, learning_rate=0.01, epsilon=1e-8 ):
+	fit_momentum = momentum / (1 - b1)
+	fit_velocity = velocity / (1 - b2)
+	return (learning_rate * fit_momentum) / ( epsilon + math.sqrt( fit_velocity ) )
+
+"""
+	Makes network learn with ADAM vector
+"""
+def learnNetworkAdamVector( network, vadam, b1=0.9, b2=0.99, learning_rate=0.01, epsilon=1e-8 ):
+	for m in range(len( network[1] )):
+    		for r in range(len( network[1][m] )):
+        		for c in range(len( network[1][m][r] )):
+            			network[1][m][r][c] -= adjustAdamValue( vadam[0][0][m][r][c], vadam[1][0][m][r][c], b1, b2, learning_rate, epsilon )
+	for v in range(len( network[0] )):
+    		for e in range(len( network[0][v] )):
+    			network[0][v][e] -= adjustAdamValue( vadam[0][1][v][e], vadam[1][1][v][e], b1, b2, learning_rate, epsilon )
+
+"""
 	Computes theorical back propagation to the network from a set of examples. Prints on console the estimated error obtained by
 	the desired cost function as argument
 	
@@ -112,13 +192,15 @@ def calculated_gradient_vector( exp_output_list, al_list, zl_list, network, dfun
 		    (for example def d_MSE(y_pred, y_exp): return 2*(y_pred - y_exp))
         show_error -> boolean, if true, shows error in this iteration, otherwhise, don't
 """
-def theorical_back_propagation( examples, network, learning_rate, fun_list, dfun_list, err_fun, derr_fun, show_error ):
+def theorical_back_propagation_adam( examples, network, learning_rate, b1, b2, epsilon, fun_list, dfun_list, err_fun, derr_fun, show_error ):
 	#randomly sort all examples
 	random.shuffle(examples)
 	#where errors will be stored
 	error = []
 	#store the vgrad as mean of rest of vgrads obtained for each example
 	vgrad = gradient_vector_builder( network )
+	#store all the ADAM optimization values in a built ADAM vector
+	vadam = adam_vector_builder( network )
 	for i in examples:
 		x = i[0] #desired input
 		y = i[1] #expected output
@@ -132,15 +214,17 @@ def theorical_back_propagation( examples, network, learning_rate, fun_list, dfun
 		calc = calculated_gradient_vector( y, al_list, zl_list, network, deepcopy(dfun_list), derr_fun )
 		#multiply each error by learning_rate
 		for j in range(len(vgrad[0])): utils.vectors_add(vgrad[0][j], calc[0][j], 1)
-		for j in range(len(vgrad[1])): utils.matrixes_add(vgrad[1][j], calc[1][j], 1)	
+		for j in range(len(vgrad[1])): utils.matrixes_add(vgrad[1][j], calc[1][j], 1)
 	#apply learning rate divided by number of examples
-	for j in range(len(vgrad[0])): utils.vector_mul(vgrad[0][j],learning_rate/len(examples))
-	for j in range(len(vgrad[1])): utils.matrix_mul(vgrad[1][j],learning_rate/len(examples))
-	#sub gradient vector to network
-	for j in range(len(vgrad[0])): utils.vectors_add(network[0][j], vgrad[0][j], -1)
-	for j in range(len(vgrad[1])): utils.matrixes_add(network[1][j], vgrad[1][j], -1)
+	for j in range(len(vgrad[0])): utils.vector_mul(vgrad[0][j],1/len(examples))
+	for j in range(len(vgrad[1])): utils.matrix_mul(vgrad[1][j],1/len(examples))
+	#update the ADAM vector
+	updateAdamVectorValues( vadam, vgrad, 0.9, 0.99 )
+	#sub ADAM value obtained with momentum and velocity for each weight error
+	learnNetworkAdamVector( network, vadam, b1, b2, learning_rate, epsilon )
 	#show error if requested
 	if show_error: print( "MSE:", sum(error) )
+	return sum(error)
 
 """
 	Make a prediction in a network and returns it as a python list
