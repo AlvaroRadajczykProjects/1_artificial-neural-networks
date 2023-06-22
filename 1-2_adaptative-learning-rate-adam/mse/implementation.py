@@ -1,6 +1,6 @@
 from copy import deepcopy
-#from numpy import random
-import random
+from numpy import random
+#import random
 import math
 
 import utils
@@ -21,7 +21,7 @@ def network_builder( input_layer, hidden_layers , output_layer ):
 	for i in range(len(nodes)-1):
 		network[0].append([ 0 for j in range(nodes[i+1]) ])
 		#network[1].append(random.normal( loc=0, scale=1, size=( nodes[i], nodes[i+1] ) ).tolist()) #2/nodes[i+1]
-		network[1].append( utils.random_matrix(nodes[i], nodes[i+1], 3, -3) )
+		network[1].append( utils.random_matrix(nodes[i], nodes[i+1], -1, 1) )
 	return network
 
 """
@@ -133,22 +133,23 @@ def calculated_gradient_vector( exp_output_list, al_list, zl_list, network, dfun
 	
 	vgrad -> gradient vector computed in current epoch
 	vadam -> ADAM vector representation
-
+	
+	se ha revisado, y debería estar bien, al menos agrupa bien las matrices de pesos y vectores de biases. Aparte, guarda los resultados en el vector ADAM
 """
 def updateAdamVectorValues( vadam, vgrad, b1=0.9, b2=0.99 ):
 	for m in range(len( vgrad[1] )):
-    		for r in range(len( vgrad[1][m] )):
+		for r in range(len( vgrad[1][m] )):
         		for c in range(len( vgrad[1][m][r] )):
         			#momentum
             			vadam[0][0][m][r][c] = b1 * vadam[0][0][m][r][c] + (1 - b1) * vgrad[1][m][r][c]
             			#velocity
             			vadam[1][0][m][r][c] = b2 * vadam[1][0][m][r][c] + (1 - b2) * vgrad[1][m][r][c] * vgrad[1][m][r][c]
 	for v in range(len( vgrad[0] )):
-    		for e in range(len( vgrad[0][v] )):
-    			#momentum
-    			vadam[0][1][v][e] = b1 * vadam[0][1][v][e] + (1 - b1) * vgrad[0][v][e]
-    			#velocity
-    			vadam[1][1][v][e] = b2 * vadam[1][1][v][e] + (1 - b2) * vgrad[0][v][e] * vgrad[0][v][e]
+		for e in range(len( vgrad[0][v] )):
+			#momentum
+			vadam[0][1][v][e] = b1 * vadam[0][1][v][e] + (1 - b1) * vgrad[0][v][e]
+			#velocity
+			vadam[1][1][v][e] = b2 * vadam[1][1][v][e] + (1 - b2) * vgrad[0][v][e] * vgrad[0][v][e]
 
 """
 	Adjust ADAM momentum and velocity and return the error value
