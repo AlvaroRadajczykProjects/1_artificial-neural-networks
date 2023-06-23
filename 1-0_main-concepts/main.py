@@ -27,7 +27,7 @@ def MSE(y_pred, y_exp):
 def d_MSE(y_pred, y_exp):
 	return 2*(y_pred - y_exp)
 
-network = implementation.network_builder( 2, [2], 1 )
+network = implementation.network_builder( 2, [10,10], 1 )
 
 fun_list = [ Tanh for i in range(len(network[0])) ]
 dfun_list = [ d_Tanh for i in range(len(network[0])) ]
@@ -55,9 +55,11 @@ epochs = 10000
 
 #cada 20 ejecuciones, 5 no aprende bien
 
+#súperfuerte, con pReLU, hay veces que si hay bastantes redes neuronales y capas, al principio puede que parezca que se vaya a quedar en un mínimo local, pero en un rato luego puede llegar a encontrar soluciones cuyo MSE llega hasta el orden de -31!!!
+
 for i in range(epochs):
-	if i%(1000-1) == 0: implementation.theorical_back_propagation( examples, network, 0.3, fun_list, dfun_list, MSE, d_MSE, True )
-	else: implementation.theorical_back_propagation( examples, network, 0.3, fun_list, dfun_list, MSE, d_MSE, False )
+	if i%(1000-1) == 0: implementation.theorical_back_propagation( examples, network, 0.01, fun_list, dfun_list, MSE, d_MSE, True )
+	else: implementation.theorical_back_propagation( examples, network, 0.01, fun_list, dfun_list, MSE, d_MSE, False )
 
 print( "prediction for [0, 0] is:", implementation.make_prediction( [0, 0], network, fun_list )[0] > 0.5 )
 print( "prediction for [0, 1] is:", implementation.make_prediction( [0, 1], network, fun_list )[0] > 0.5 )

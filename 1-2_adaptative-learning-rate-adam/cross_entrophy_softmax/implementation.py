@@ -109,8 +109,9 @@ def forward_propagation_softmax( input_list, network, fun_list ):
 def obtainErrorBiasOutputLayerSoftmax( exp_output_list, output_layer_al ):
 	biases = []
 	for i in range(len(exp_output_list)):
-		if exp_output_list[i] == 1: biases.append( output_layer_al[i] - 1 )
-		else: biases.append( output_layer_al[i] )
+		biases.append( output_layer_al[i] - exp_output_list[i] )
+		"""if exp_output_list[i] == 1: biases.append( output_layer_al[i] - 1 )
+		else: biases.append( output_layer_al[i] )"""
 	return biases
 
 """
@@ -251,6 +252,7 @@ def back_propagation_one_epoch_softmax( examples, network, learning_rate, b1, b2
 	learnNetworkAdamVector( network, vadam, b1, b2, learning_rate, epsilon )
 	#show error if requested
 	if show_error: print( "Softmax and cross entrophy error:", sum(error) )
+	return sum(error)
 
 """
 	Make a prediction in a network and returns it as a python list

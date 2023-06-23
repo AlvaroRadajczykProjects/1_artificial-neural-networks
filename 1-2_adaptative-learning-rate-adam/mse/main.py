@@ -27,10 +27,10 @@ def MSE(y_pred, y_exp):
 def d_MSE(y_pred, y_exp):
 	return 2*(y_pred - y_exp)
 
-network = implementation.network_builder( 2, [2], 1 )
+network = implementation.network_builder( 2, [10,10,10], 1 )
 
-fun_list = [ Tanh for i in range(len(network[0])) ]
-dfun_list = [ d_Tanh for i in range(len(network[0])) ]
+fun_list = [ pReLU for i in range(len(network[0])) ]
+dfun_list = [ d_pReLU for i in range(len(network[0])) ]
 
 examples = [
 	[ [ 0, 0 ], [0] ],
@@ -56,13 +56,22 @@ epochs = 100000
 #suele fallar menos. Lo que si, con una tasa de aprendizaje bastante más baja, es capaz de aprender mejor, más rápido
 #si la tasa de aprendizaje es muy baja y hay suficientes épocas, a veces es capaz de recuperarse de algunos mínimos locales malos
 
-"""error = 100
+"""
 while error > 1e-3:"""
-for i in range(epochs):
-	if i%1000==0: implementation.theorical_back_propagation_adam( examples, network, 0.001, 0.9, 0.9, 1e-9, fun_list, dfun_list, MSE, d_MSE, True )
-	else: implementation.theorical_back_propagation_adam( examples, network, 0.001, 0.9, 0.9, 1e-9, fun_list, dfun_list, MSE, d_MSE, False )
+perror = 100
+i = 0
+seguir = True
 
-print( "prediction for [0, 0] is:", implementation.make_prediction( [0, 0], network, fun_list )[0] > 0.5 )
-print( "prediction for [0, 1] is:", implementation.make_prediction( [0, 1], network, fun_list )[0] > 0.5 )
-print( "prediction for [1, 0] is:", implementation.make_prediction( [1, 0], network, fun_list )[0] > 0.5 )
-print( "prediction for [1, 1] is:", implementation.make_prediction( [1, 1], network, fun_list )[0] > 0.5 )
+while seguir:
+	i+=1
+	if i%1000==0: 
+		cerror = implementation.theorical_back_propagation_adam( examples, network, 0.001, 0.9, 0.999, 1e-8, fun_list, dfun_list, MSE, d_MSE, True )
+		print( "Aumenta el error?", cerror > perror )
+		if cerror > perror or i > 10000: seguir = False
+		perror = cerror
+	else: implementation.theorical_back_propagation_adam( examples, network, 0.001, 0.9, 0.999, 1e-8, fun_list, dfun_list, MSE, d_MSE, False )
+
+print( "prediction for [0, 0] is:", implementation.make_prediction( [0, 0], network, fun_list ) )
+print( "prediction for [0, 1] is:", implementation.make_prediction( [0, 1], network, fun_list ) )
+print( "prediction for [1, 0] is:", implementation.make_prediction( [1, 0], network, fun_list ) )
+print( "prediction for [1, 1] is:", implementation.make_prediction( [1, 1], network, fun_list ) )
