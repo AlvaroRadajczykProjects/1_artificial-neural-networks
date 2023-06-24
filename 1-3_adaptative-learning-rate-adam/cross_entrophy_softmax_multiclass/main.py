@@ -21,16 +21,10 @@ def d_pReLU(x):
 	if x < 0: return 0.01
 	else: return 1
 
-def MSE(y_pred, y_exp):
-	return (y_pred - y_exp)**2
+network = implementation.network_builder( 2, [10,10,10], 4 )
 
-def d_MSE(y_pred, y_exp):
-	return 2*(y_pred - y_exp)
-
-network = implementation.network_builder( 2, [3, 4], 4 )
-
-fun_list = [ Tanh for i in range(len(network[0])) ]
-dfun_list = [ d_Tanh for i in range(len(network[0])) ]
+fun_list = [ pReLU for i in range(len(network[0])) ]
+dfun_list = [ d_pReLU for i in range(len(network[0])) ]
 
 examples = [
 	[ [ 0, 0 ], [1, 0, 0, 0] ],
@@ -39,7 +33,7 @@ examples = [
 	[ [ 1, 1 ], [0, 0, 0, 1] ]
 ]
 
-epochs = 10000
+max_epochs = 3000
 
 """
 	we wont always obtain a good prediction. involved factors are:
@@ -53,9 +47,24 @@ epochs = 10000
 	in addition, Tanh is slower computing, but average results are better than average sigmoid results
 """
 
-for i in range(epochs):
-	if i%(1000-1) == 0: implementation.back_propagation_one_epoch_softmax( examples, network, 0.03, fun_list, dfun_list, True )
-	else: implementation.back_propagation_one_epoch_softmax( examples, network, 0.03, fun_list, dfun_list, False )
+#se producen menos errores, pero a veces incluso se queda quieto en un mal mínimo local! aumentando las neuronas en la capa de salida reduce las posibilidades de que eso pase
+
+perror = 100
+i = 0
+seguir = True
+
+while seguir:
+	i+=1
+	if i%1000==0: 
+		cerror = implementation.back_propagation_one_epoch_softmax( examples, network, 0.001, 0.9, 0.99, 1e-8, fun_list, dfun_list, True )
+		print( "Aumenta el error?", cerror > perror )
+		if cerror > perror or i > max_epochs: seguir = False
+		perror = cerror
+	else: implementation.back_propagation_one_epoch_softmax( examples, network, 0.001, 0.9, 0.99, 1e-8, fun_list, dfun_list, False )
+
+"""for i in range(epochs):
+	if i%(1000-1) == 0: implementation.back_propagation_one_epoch_softmax( examples, network, 0.01, 0.9, 0.99, 1e-8, fun_list, dfun_list, True )
+	else: implementation.back_propagation_one_epoch_softmax( examples, network, 0.01, 0.9, 0.99, 1e-8, fun_list, dfun_list, False )"""
 
 def parsePred(pred):
 	ret = []

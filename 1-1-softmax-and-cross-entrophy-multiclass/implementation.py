@@ -77,8 +77,9 @@ def forward_propagation_softmax( input_list, network, fun_list ):
 def obtainErrorBiasOutputLayerSoftmax( exp_output_list, output_layer_al ):
 	biases = []
 	for i in range(len(exp_output_list)):
-		if exp_output_list[i] == 1: biases.append( output_layer_al[i] - 1 )
-		else: biases.append( output_layer_al[i] )
+		biases.append( output_layer_al[i] - exp_output_list[i] )
+		"""if exp_output_list[i] == 1: biases.append( output_layer_al[i] - 1 )
+		else: biases.append( output_layer_al[i] )"""
 	return biases
 
 """
